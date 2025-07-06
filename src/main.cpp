@@ -9,13 +9,13 @@
 void setup() {
     Serial.begin(115200);
 
-    lcdStatus = lcd.begin(16, 2);
+   /* lcdStatus = lcd.begin(16, 2);
     if (lcdStatus) {
         Serial.print("LCD init failed: "); Serial.println(lcdStatus);
         while (1);
     }
     lcd.setBacklight(true);
-    lcd.clear(); lcd.setCursor(0, 0); lcd.print("Connecting WiFi");
+    lcd.clear(); lcd.setCursor(0, 0); lcd.print("Connecting WiFi");*/
 
     connectAWS();
     lcd.clear(); lcd.setCursor(0, 0); lcd.print("Connected!");
@@ -48,5 +48,5 @@ void setup() {
 }
 
 void loop() {
-    Serial.println("code working in side loop");
+    
 }
