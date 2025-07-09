@@ -14,12 +14,6 @@ float lastHum = 0.0;
 float lastMQ6 = 0.0;
 SensorData sensorData;
 
-// ---------- Flags & Timers ----------
-bool buzzerStopped = false;
-bool resetTriggered = false;
-bool resetCompleteDisplayed = false;
-unsigned long resetCompleteTime = 0;
-
 // ---------- LCD ----------
 hd44780_I2Cexp lcd;
 int lcdStatus = 0;

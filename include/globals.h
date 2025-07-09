@@ -24,10 +24,10 @@ extern float lastMQ6;
 extern SensorData sensorData;
 
 // ---------- Flags & Timers ----------
-extern bool buzzerStopped;
+/*extern bool buzzerStopped;
 extern bool resetTriggered;
 extern bool resetCompleteDisplayed;
-extern unsigned long resetCompleteTime;
+extern whunsigned long resetCompleteTime;*/
 
 // ---------- LCD ----------
 extern hd44780_I2Cexp lcd;

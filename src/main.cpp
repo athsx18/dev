@@ -9,46 +9,27 @@
 void setup() {
     Serial.begin(115200);
 
-    /* lcdStatus = lcd.begin(16, 2);
-    if (lcdStatus) {
-        Serial.print("LCD init failed: "); Serial.println(lcdStatus);
-        while (1);
-    }
-    lcd.setBacklight(true);
-    lcd.clear(); lcd.setCursor(0, 0); lcd.print("Connecting WiFi");*/
+    // LCD Module
+    initDisplay();
+    showStatus("WiFi Connecting");
 
-    // Wi-Fi + MQTT + LCD
+    // Wi-Fi + MQTT
     connectAWS();
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Connected!");
+    showStatus("Connected!");
     delay(1000);
 
     // MQ6 Initialization & Calibration
     initializeMQ6(MQ6_PIN);
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Calibrating MQ6...");
+    showStatus("Calibrating MQ6...");
     calibrate();
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("MQ6 Gas Monitor");
+    showStatus("MQ6 Gas Monitor");
     delay(2000);
 
     // BLE Setup
     setupBLE();
 
-    // I/O Pins
-    pinMode(GREEN_LED_PIN, OUTPUT);
-    pinMode(YELLOW_LED_PIN, OUTPUT);
-    pinMode(RED_LED_PIN, OUTPUT);
-    pinMode(BUZZER_PIN, OUTPUT);
-    pinMode(STOP_BUTTON_PIN, INPUT_PULLUP);
-    pinMode(RESET_BUTTON_PIN, INPUT_PULLUP);
-
-    // Buzzer PWM setup
-    ledcSetup(0, 2000, 8);
-    ledcAttachPin(BUZZER_PIN, 0);
+    // ALERT SYSTEM (LEDs, Buzzer, Buttons)
+    initAlertSystem();
 
     // FreeRTOS Tasks
     xTaskCreate(taskAlertsAndButtons, "AlertsButtons", 8192, NULL, 4, NULL);

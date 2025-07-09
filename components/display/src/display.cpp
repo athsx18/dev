@@ -1,24 +1,50 @@
 #include "display.h"
 #include "globals.h"
+#include "config.h"
 #include "sensor.h"
 
-void taskLCD(void *pvParameters) {
+void initDisplay() {
+    lcdStatus = lcd.begin(16, 2);
+    if (lcdStatus) {
+        Serial.print("LCD init failed: ");
+        Serial.println(lcdStatus);
+        while (1);
+    }
+    lcd.setBacklight(true);
+    clearDisplay();
+    showStatus("WiFi Connecting");
+}
+
+void clearDisplay() {
+    lcd.clear();
+}
+
+void showStatus(const String& message) {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print(message);
+}
+
+void showReading(float ppm) {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Gas: ");
+    lcd.print(ppm, 2);
+    lcd.print(" PPM");
+
+    lcd.setCursor(0, 1);
+    if (ppm <= WARNING_THRESHOLD) {
+        lcd.print("Safe Level");
+    } else if (ppm <= DANGER_THRESHOLD) {
+        lcd.print("Critical Level");
+    } else {
+        lcd.print("Danger Level");
+    }
+}
+
+void taskLCD(void* pvParameters) {
     while (1) {
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Gas: ");
-        lcd.print(currentGasPPM, 2);
-        lcd.print(" PPM");
-
-        lcd.setCursor(0, 1);
-        if (currentGasPPM <= WARNING_THRESHOLD) {
-            lcd.print("Safe Level");
-        } else if (currentGasPPM <= DANGER_THRESHOLD) {
-            lcd.print("Critical Level");
-        } else {
-            lcd.print("Danger Level");
-        }
-
+        showReading(currentGasPPM);
         Serial.printf("Gas: %.2f PPM\n", currentGasPPM);
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
