@@ -14,7 +14,7 @@
 extern DHT dht;
 
 // ---------- Global Sensor Variables ----------
-extern float Ro;
+//extern float Ro;
 extern float currentGasPPM;
 extern float temperature;
 extern float humidity;

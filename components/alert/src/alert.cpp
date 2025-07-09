@@ -37,7 +37,8 @@ void performReset() {
 
     connectToWiFi();
     connectAWS();
-    Ro = calibrateMQ6(MQ5_PIN);
+    initializeMQ6(MQ6_PIN);  // re-init pin if needed
+    calibrate();             // re-calibrate Ro
 
     buzzerStopped = false;
     resetTriggered = true;

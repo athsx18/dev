@@ -3,27 +3,25 @@
 
 #include <Arduino.h>
 
-// ---------- MQ6 Sensor ----------
-float calibrateMQ6(int pin);
-float readMQ6PPM(int pin, float ro);
+// ---------- Public API ----------
+void initializeMQ6(int pin);
+void calibrate();
+float readConcentration();
 
 // ---------- DHT Sensor ----------
 void taskDHT(void *pvParameters);
-
-// ---------- MQ6 Compensation ----------
-float getCompensationFactor(float T, float H, float raw);
+void taskReadSensors(void *pvParameters);
 
 // ---------- Gas Sensor Task ----------
 void taskGasSensor(void *pvParameters);
-void taskReadSensors(void *pvParameters);
 
-// ---------- Gas Thresholds ----------
+// ---------- Compensation ----------
+float getCompensationFactor(float T, float H, float raw);
+
+// ---------- Thresholds ----------
 #define WARNING_THRESHOLD     200.0
 #define DANGER_THRESHOLD      400.0
-#define RL_VALUE              6.2    // kΩ
+#define RL_VALUE              6.2
 #define ADC_RESOLUTION        4095
-#define CLEAN_AIR_RATIO       6.5
-
-
 
 #endif // SENSOR_H

@@ -2,7 +2,7 @@
 #define CONFIG_H
 
 // ---------- Pin Definitions ----------
-#define MQ5_PIN           34
+#define MQ6_PIN           34
 #define GREEN_LED_PIN     32
 #define YELLOW_LED_PIN    14
 #define RED_LED_PIN       33

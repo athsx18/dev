@@ -5,7 +5,7 @@
 DHT dht(4, DHT11); 
 
 // ---------- Global Sensor Variables ----------
-float Ro = 10.0;
+//float Ro = 10.0;
 float currentGasPPM = 0.0;
 float temperature = 0.0;
 float humidity = 0.0;

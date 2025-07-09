@@ -121,6 +121,6 @@ void taskPublish(void *pvParameters) {
     while (1) {
         publishMessage();
         client.loop();
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        vTaskDelay(3000 / portTICK_PERIOD_MS);
     }
 }
