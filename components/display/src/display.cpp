@@ -44,8 +44,13 @@ void showReading(float ppm) {
 
 void taskLCD(void* pvParameters) {
     while (1) {
-        showReading(currentGasPPM);
-        Serial.printf("Gas: %.2f PPM\n", currentGasPPM);
+        showReading(currentGasPPM);  // Always show on LCD
+
+        if (client.connected()) {
+            Serial.printf("Gas: %.2f PPM\n", currentGasPPM);  // Only print if MQTT connected
+        }
+
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
+

@@ -113,11 +113,11 @@ void connectToWiFi() {
     Serial.println("\nScanning for WiFi networks...");
     int numNetworks = WiFi.scanNetworks();
 
-    /*if (numNetworks == 0) {
+    if (numNetworks == 0) {
       Serial.println("No networks found. Retrying...");
       delay(2000);
       continue;
-    }*/
+    }
 
     Serial.println("Networks found:");
     for (int i = 0; i < numNetworks; ++i) {
