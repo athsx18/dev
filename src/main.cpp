@@ -9,41 +9,34 @@
 
 void setup() {
     Serial.begin(115200);
-
-     loadConfig();  // Load thresholds and Ro
-
-     
-    
-    //initDisplay();   // LCD Module
+    loadConfig();                   // Load thresholds, Ro, SSID
     showStatus("WiFi Connecting");
 
-    // Wi-Fi + MQTT
-    connectAWS();
+    connectToWiFi();               // ✅ Connect Wi-Fi
+    setupAWSMQTTClient();          // ✅ One-time cert & MQTT config
     showStatus("Connected!");
     delay(1000);
 
-    // MQ6 Initialization & Calibration
-    initializeMQ6(MQ6_PIN);
+    initializeMQ6(MQ6_PIN);        // Gas Sensor Setup
     showStatus("Calibrating MQ6...");
     calibrate();
     showStatus("MQ6 Gas Monitor");
     delay(2000);
 
-    // BLE Setup
-    setupBLE();
+    setupBLE();                    // BLE Init
+    initAlertSystem();             // LED, Buzzer, Button GPIO
 
-    // ALERT SYSTEM (LEDs, Buzzer, Buttons)
-    initAlertSystem();
-
-    // FreeRTOS Tasks
+    // 🧵 Start FreeRTOS Tasks
     xTaskCreate(taskAlertsAndButtons, "AlertsButtons", 8192, NULL, 4, NULL);
     xTaskCreate(taskGasSensor, "GasSensor", 4096, NULL, 3, NULL);
-    xTaskCreate(taskPublish, "Publish", 4096, NULL, 2, NULL);
+    xTaskCreate(taskPublish, "Publish", 8192, NULL, 2, NULL);
+    xTaskCreate(taskMQTTLoop, "MQTT Loop", 4096, NULL, 2, NULL);  // ✅ Required
     xTaskCreate(taskLCD, "LCD", 4096, NULL, 1, NULL);
     xTaskCreate(taskBLE, "BLE", 4096, NULL, 1, NULL);
     xTaskCreate(taskDHT, "DHT", 2048, NULL, 1, NULL);
     xTaskCreate(taskReadSensors, "SensorState", 4096, NULL, 1, NULL);
 }
+
 
 void loop() {
     

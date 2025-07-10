@@ -17,5 +17,7 @@ void updateShadow(PubSubClient &client, bool wifiState, bool mqttState, bool dht
 void taskWiFiMQTT(void *pvParameters);
 void taskBLE(void *pvParameters);
 void taskPublish(void *pvParameters);
+void setupAWSMQTTClient();
+void taskMQTTLoop(void *pvParameters);
 
 #endif // NETWORK_H

@@ -6,8 +6,11 @@
 #include "utils.h"
 #include "alert.h"
 #include "config_manager.h"
-
 #include <ArduinoJson.h>
+
+unsigned long lastReconnectTime = 0;
+bool justReconnected = false;
+
 
 class MyBLECallbacks : public NimBLEServerCallbacks {
     void onConnect(NimBLEServer* pServer) {
@@ -37,6 +40,45 @@ void setupBLE() {
 
     Serial.println("BLE service started");
 }
+
+void setupAWSMQTTClient() {
+    net.setCACert(AWS_CERT_CA);
+    net.setCertificate(AWS_CERT_CRT);
+    net.setPrivateKey(AWS_CERT_PRIVATE);
+
+    client.setServer(AWS_IOT_ENDPOINT, 8883);
+    client.setKeepAlive(60);          // ✅ Improve reliability
+    client.setBufferSize(1024);       // ✅ Prevent truncation of large payloads
+}
+
+bool reconnectAWS() {
+    if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("🔁 WiFi not connected. Reconnecting...");
+        connectToWiFi();
+    }
+
+    if (client.connected()) return true;
+
+    Serial.print("🔌 Connecting to AWS IoT MQTT... ");
+    int attempts = 0;
+    unsigned long start = millis();
+
+    while (!client.connected() && attempts++ < 5) {
+        if (client.connect(THINGNAME)) {
+            unsigned long elapsed = millis() - start;
+            Serial.printf("✅ Connected! (%.2f sec)\n", elapsed / 1000.0);
+            justReconnected = true;
+            lastReconnectTime = millis();
+            return true;
+        }
+        delay(1000);
+        Serial.print(".");
+    }
+
+    Serial.println("❌ MQTT connection failed.");
+    return false;
+}
+
 
 
 void connectToWiFi() {
@@ -71,11 +113,11 @@ void connectToWiFi() {
     Serial.println("\nScanning for WiFi networks...");
     int numNetworks = WiFi.scanNetworks();
 
-    if (numNetworks == 0) {
+    /*if (numNetworks == 0) {
       Serial.println("No networks found. Retrying...");
       delay(2000);
       continue;
-    }
+    }*/
 
     Serial.println("Networks found:");
     for (int i = 0; i < numNetworks; ++i) {
@@ -144,7 +186,9 @@ void connectToWiFi() {
 
 
 void connectAWS() {
-    connectToWiFi();
+    if (WiFi.status() != WL_CONNECTED) {
+        connectToWiFi();
+    }
     net.setCACert(AWS_CERT_CA);
     net.setCertificate(AWS_CERT_CRT);
     net.setPrivateKey(AWS_CERT_PRIVATE);
@@ -164,9 +208,12 @@ void connectAWS() {
         ESP.restart();
     }
     Serial.println("AWS IoT Connected!");
+    delay(500);  // ✅ Allow connection to stabilize before first publish
 }
 
 void publishMessage() {
+    if (!client.connected()) return;
+
     StaticJsonDocument<256> doc;
     doc["deviceId"] = THINGNAME;
     doc["ppm_raw"] = sensorData.rawPPM;
@@ -179,9 +226,11 @@ void publishMessage() {
     serializeJson(doc, buffer);
 
     bool success = client.publish(AWS_IOT_PUBLISH_TOPIC, buffer);
-    Serial.println(success ? "[MQTT] Publish Success" : "[MQTT] Publish Failed");
+    Serial.println(success ? "[MQTT] ✅ Publish Success" : "[MQTT] ❌ Publish Failed");
     Serial.println(buffer);
 }
+
+
 
 void updateShadow(PubSubClient &client, bool wifiState, bool mqttState, bool dhtState, bool mq6State) {
     String payload = "{";
@@ -215,8 +264,31 @@ void taskBLE(void *pvParameters) {
 
 void taskPublish(void *pvParameters) {
     while (1) {
+        if (!client.connected()) {
+            reconnectAWS();  // 🛜 Will set justReconnected = true
+        }
+
+        if (justReconnected && millis() - lastReconnectTime < 2000) {
+            client.loop();  // let TLS settle
+            vTaskDelay(100 / portTICK_PERIOD_MS);
+            continue;
+        }
+
+        Serial.printf("WiFi: %s | MQTT: %s | Heap: %d\n",
+                      WiFi.isConnected() ? "ON" : "OFF",
+                      client.connected() ? "ON" : "OFF",
+                      ESP.getFreeHeap());
+
         publishMessage();
-        client.loop();
-        vTaskDelay(3000 / portTICK_PERIOD_MS);
+        vTaskDelay(5000 / portTICK_PERIOD_MS);
     }
 }
+void taskMQTTLoop(void *pvParameters) {
+    while (1) {
+        if (client.connected()) {
+            client.loop();  // must run often to keep TLS session alive
+        }
+        vTaskDelay(100 / portTICK_PERIOD_MS);
+    }
+}
+
