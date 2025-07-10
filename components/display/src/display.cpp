@@ -33,9 +33,9 @@ void showReading(float ppm) {
     lcd.print(" PPM");
 
     lcd.setCursor(0, 1);
-    if (ppm <= WARNING_THRESHOLD) {
+    if (ppm <= getConfig().warningThreshold) {
         lcd.print("Safe Level");
-    } else if (ppm <= DANGER_THRESHOLD) {
+    } else if (ppm <= getConfig().dangerThreshold) {
         lcd.print("Critical Level");
     } else {
         lcd.print("Danger Level");

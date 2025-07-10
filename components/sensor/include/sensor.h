@@ -1,5 +1,6 @@
 #ifndef SENSOR_H
 #define SENSOR_H
+#include "config_manager.h"
 
 #include <Arduino.h>
 
@@ -19,8 +20,8 @@ void taskGasSensor(void *pvParameters);
 float getCompensationFactor(float T, float H, float raw);
 
 // ---------- Thresholds ----------
-#define WARNING_THRESHOLD     200.0
-#define DANGER_THRESHOLD      400.0
+extern float danger;
+extern float warning;
 #define RL_VALUE              6.2
 #define ADC_RESOLUTION        4095
 

@@ -5,12 +5,26 @@
 #include "sensor.h"
 #include "display.h"
 #include "globals.h"
+#include "input.h"
+#include "config_manager.h"
 
 static bool buzzerStopped = false;
 static bool alertActive = false;
 static bool resetTriggered = false;
 static unsigned long resetCompleteTime = 0;
 static bool resetCompleteDisplayed = false;
+
+void onStopPressed() {
+    buzzerStopped = true;
+    ledcWrite(0, 0);
+    digitalWrite(RED_LED_PIN, LOW);
+    digitalWrite(YELLOW_LED_PIN, LOW);
+    digitalWrite(GREEN_LED_PIN, HIGH);
+}
+
+void onResetPressed() {
+    performReset();
+}
 
 void initAlertSystem() {
     pinMode(GREEN_LED_PIN, OUTPUT);
@@ -22,10 +36,14 @@ void initAlertSystem() {
 
     ledcSetup(0, 2000, 8); // Channel 0, 2kHz freq, 8-bit resolution
     ledcAttachPin(BUZZER_PIN, 0);
+
+    initInputSystem();                     // 👈 INIT input module
+    registerStopCallback(onStopPressed);  // 👈 REGISTER callback
+    registerResetCallback(onResetPressed);
 }
 
 void updateAlerts(float gasPPM) {
-    if (gasPPM > DANGER_THRESHOLD) {
+    if (gasPPM > getConfig().dangerThreshold) {
         alertActive = true;
         if (!buzzerStopped) {
             digitalWrite(RED_LED_PIN, HIGH);
@@ -33,7 +51,7 @@ void updateAlerts(float gasPPM) {
             digitalWrite(GREEN_LED_PIN, LOW);
             ledcWrite(0, 128); // Buzzer on
         }
-    } else if (gasPPM > WARNING_THRESHOLD) {
+    } else if (gasPPM > getConfig().warningThreshold) {
         alertActive = true;
         digitalWrite(RED_LED_PIN, LOW);
         digitalWrite(YELLOW_LED_PIN, HIGH);
@@ -47,40 +65,11 @@ void updateAlerts(float gasPPM) {
         ledcWrite(0, 0); // Buzzer off
     }
 
-    if (gasPPM <= DANGER_THRESHOLD) {
+    if (gasPPM <= getConfig().dangerThreshold) {
         buzzerStopped = false;
     }
 }
 
-void handleStopButton(float gasPPM) {
-    static unsigned long lastDebounceTime = 0;
-    const unsigned long debounceDelay = 50;
-
-    if (digitalRead(STOP_BUTTON_PIN) == LOW && gasPPM > DANGER_THRESHOLD) {
-        unsigned long currentTime = millis();
-        if ((currentTime - lastDebounceTime) > debounceDelay) {
-            buzzerStopped = true;
-            ledcWrite(0, 0);
-            digitalWrite(RED_LED_PIN, LOW);
-            digitalWrite(YELLOW_LED_PIN, LOW);
-            digitalWrite(GREEN_LED_PIN, HIGH);
-        }
-        lastDebounceTime = currentTime;
-    }
-}
-
-void handleResetButton() {
-    static unsigned long lastDebounceTime = 0;
-    const unsigned long debounceDelay = 50;
-
-    if (digitalRead(RESET_BUTTON_PIN) == LOW) {
-        unsigned long currentTime = millis();
-        if ((currentTime - lastDebounceTime) > debounceDelay) {
-            performReset();
-        }
-        lastDebounceTime = currentTime;
-    }
-}
 
 void performReset() {
     lcd.clear();
@@ -109,12 +98,11 @@ bool isAlertActive() {
     return alertActive;
 }
 
-
 void taskAlertsAndButtons(void *pvParameters) {
     while (1) {
-        handleStopButton(currentGasPPM);
-        handleResetButton();
+        checkButtons();                       // 👈 input module handles STOP + RESET
         updateAlerts(currentGasPPM);
         vTaskDelay(200 / portTICK_PERIOD_MS);
     }
 }
+

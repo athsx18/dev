@@ -5,9 +5,12 @@
 #include "alert.h"
 #include "config.h"
 #include "globals.h"
+#include "config_manager.h"
 
 void setup() {
     Serial.begin(115200);
+
+     loadConfig();  // Load thresholds and Ro
 
     // LCD Module
     initDisplay();
