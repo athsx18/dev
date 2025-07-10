@@ -5,6 +5,8 @@
 #include "sensor.h"
 #include "utils.h"
 #include "alert.h"
+#include "config_manager.h"
+
 #include <ArduinoJson.h>
 
 class MyBLECallbacks : public NimBLEServerCallbacks {
@@ -36,16 +38,110 @@ void setupBLE() {
     Serial.println("BLE service started");
 }
 
+
 void connectToWiFi() {
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    Serial.print("Connecting to WiFi...");
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
-    }
-    Serial.println("\nWiFi connected!");
+  Config cfg = getConfig();  // 🔁 Load saved config from SPIFFS
+
+  // 📌 Set WiFi mode and disconnect any previous connection
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect(true);
+  delay(1000);
+
+  // 🔌 Try saved credentials first
+  Serial.printf("\n🔁 Trying saved WiFi: %s...\n", cfg.wifiSSID);
+  WiFi.begin(cfg.wifiSSID, cfg.wifiPassword);
+
+  unsigned long startAttempt = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - startAttempt < 10000) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\n✅ Connected using saved credentials!");
+    Serial.print("📍 IP: ");
     Serial.println(WiFi.localIP());
+    return;
+  }
+
+  Serial.println("\n⚠️ Failed to connect using saved credentials.");
+
+  // 📡 Fallback: Scan for available networks
+  while (true) {
+    Serial.println("\nScanning for WiFi networks...");
+    int numNetworks = WiFi.scanNetworks();
+
+    if (numNetworks == 0) {
+      Serial.println("No networks found. Retrying...");
+      delay(2000);
+      continue;
+    }
+
+    Serial.println("Networks found:");
+    for (int i = 0; i < numNetworks; ++i) {
+      Serial.printf("[%d] %s (RSSI: %d)%s\n",
+                    i + 1,
+                    WiFi.SSID(i).c_str(),
+                    WiFi.RSSI(i),
+                    (WiFi.encryptionType(i) == WIFI_AUTH_OPEN) ? " [Open]" : "");
+    }
+
+    Serial.println("\nEnter the number of the SSID you want to connect to (0 to rescan):");
+    while (!Serial.available()) delay(100);
+
+    int ssidChoice = Serial.parseInt();
+    Serial.read(); // consume newline or leftover char
+
+    if (ssidChoice == 0) {
+      Serial.println("Rescanning networks...");
+      continue;
+    }
+
+    if (ssidChoice < 1 || ssidChoice > numNetworks) {
+      Serial.println("Invalid choice.");
+      return;
+    }
+
+    String selectedSSID = WiFi.SSID(ssidChoice - 1);
+    Serial.print("You selected: ");
+    Serial.println(selectedSSID);
+
+    String password = "";
+    if (WiFi.encryptionType(ssidChoice - 1) != WIFI_AUTH_OPEN) {
+      Serial.println("Enter password:");
+      while (!Serial.available()) delay(100);
+      password = Serial.readStringUntil('\n');
+    }
+
+    WiFi.begin(selectedSSID.c_str(), password.c_str());
+    unsigned long startMillis = millis();
+
+    Serial.print("Connecting");
+    while (WiFi.status() != WL_CONNECTED) {
+      if (millis() - startMillis > 10000) {
+        Serial.println("\nConnection failed. Retrying...");
+        return;
+      }
+      delay(500);
+      Serial.print(".");
+    }
+
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.println("\n✅ Connected to WiFi!");
+      Serial.print("📍 IP: ");
+      Serial.println(WiFi.localIP());
+
+      // 💾 Save new credentials
+      setWiFiCredentials(selectedSSID.c_str(), password.c_str());
+      saveConfig();
+      break;
+    } else {
+      Serial.println("\n❌ Connection failed. Try another network.");
+    }
+  }
 }
+
+
 
 void connectAWS() {
     connectToWiFi();

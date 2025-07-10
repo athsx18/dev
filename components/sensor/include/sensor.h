@@ -20,8 +20,6 @@ void taskGasSensor(void *pvParameters);
 float getCompensationFactor(float T, float H, float raw);
 
 // ---------- Thresholds ----------
-extern float danger;
-extern float warning;
 #define RL_VALUE              6.2
 #define ADC_RESOLUTION        4095
 

@@ -7,6 +7,7 @@
 static int mq6Pin;
 static float Ro = 10.0;
 
+
 // Initialization
 void initializeMQ6(int pin) {
     mq6Pin = pin;

@@ -12,8 +12,9 @@ void setup() {
 
      loadConfig();  // Load thresholds and Ro
 
-    // LCD Module
-    initDisplay();
+     
+    
+    //initDisplay();   // LCD Module
     showStatus("WiFi Connecting");
 
     // Wi-Fi + MQTT
